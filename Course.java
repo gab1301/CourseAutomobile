@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public class Course {
     private final String id;
@@ -87,19 +88,58 @@ public class Course {
 
     public boolean estValidePourDemarrage() {
         return etat == EtatCourse.EN_PREPARATION
-                && this.distanceTotale > 0
+                && distanceTotale > 0
                 && participations.size() >= 2
                 && participations.stream().allMatch(p -> p.getVoiture().getVitesse() > 0);
     }
 
-    public void enregistrerArrivee(ParticipationCourse participation, int tourArrivee, double distanceTotale) {
-        if (participation != null && participations.contains(participation) && !classement.contains(participation)) {
-            classement.add(participation);
-            classement.sort(Comparator
-                    .comparingInt(ParticipationCourse::getToursEffectues).reversed()
-                    .thenComparingDouble(ParticipationCourse::getTempsArriveeTheorique)
-                    .thenComparing(p -> p.getVoiture().getId()));
+    public void demarrer() {
+        if (!estValidePourDemarrage()) {
+            throw new IllegalStateException("La course ne peut pas démarrer.");
         }
+        for (ParticipationCourse p : participations) {
+            p.reinitialiser();
+        }
+        classement.clear();
+        nombreToursTotal = 0;
+        etat = EtatCourse.EN_COURS;
+    }
+
+    public boolean simulerTour() {
+        if (etat != EtatCourse.EN_COURS) {
+            throw new IllegalStateException("La course n'est pas en cours.");
+        }
+        nombreToursTotal++;
+        for (ParticipationCourse p : participations) {
+            if (!p.isTerminee()) {
+                boolean arrivee = p.avancer(this.distanceTotale, nombreToursTotal);
+                if (arrivee) {
+                    enregistrerArrivee(p, nombreToursTotal, this.distanceTotale);
+                }
+            }
+        }
+
+        boolean toutesTerminees = participations.stream().allMatch(ParticipationCourse::isTerminee);
+        if (toutesTerminees) {
+            genererClassement();
+            etat = EtatCourse.TERMINEE;
+            return true;
+        }
+        return false;
+    }
+
+    public void enregistrerArrivee(ParticipationCourse participation, int tourArrivee, double distanceTotale) {
+        Objects.requireNonNull(participation, "La participation ne peut pas être nulle.");
+        if (!participations.contains(participation)) {
+            throw new IllegalArgumentException("Cette participation n'appartient pas à la course.");
+        }
+        if (!classement.contains(participation)) {
+            classement.add(participation);
+        }
+        classement.sort(Comparator
+                .comparingInt(ParticipationCourse::getToursEffectues).reversed()
+                .thenComparingDouble(ParticipationCourse::getTempsArriveeTheorique)
+                .thenComparing(p -> p.getVoiture().getId()));
     }
 
     public List<ParticipationCourse> genererClassement() {
