@@ -61,6 +61,13 @@ public class Voiture {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Voiture voiture)) return false;
+        return Objects.equals(id, voiture.id);
+    }
+
+    @Override
     public String toString() {
         return "[" + id + "] " + nom + " (" + marque + ") - " + vitesse + " km/tour";
     }
