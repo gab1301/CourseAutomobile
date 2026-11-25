@@ -4,13 +4,13 @@ import java.util.Comparator;
 import java.util.List;
 
 public class Course {
-    private String id;
-    private String nom;
-    private double distanceTotale;
+    private final String id;
+    private final String nom;
+    private final double distanceTotale;
     private EtatCourse etat;
     private int nombreToursTotal;
-    private List<ParticipationCourse> participations;
-    private List<ParticipationCourse> classement;
+    private final List<ParticipationCourse> participations;
+    private final List<ParticipationCourse> classement;
 
     public Course(String id, String nom, double distanceTotale) {
         if (id == null || id.trim().isEmpty()) {
@@ -93,19 +93,24 @@ public class Course {
     }
 
     public void enregistrerArrivee(ParticipationCourse participation, int tourArrivee, double distanceTotale) {
-        if (participation != null && !classement.contains(participation)) {
+        if (participation != null && participations.contains(participation) && !classement.contains(participation)) {
             classement.add(participation);
+            classement.sort(Comparator
+                    .comparingInt(ParticipationCourse::getToursEffectues).reversed()
+                    .thenComparingDouble(ParticipationCourse::getTempsArriveeTheorique)
+                    .thenComparing(p -> p.getVoiture().getId()));
         }
     }
 
     public List<ParticipationCourse> genererClassement() {
         List<ParticipationCourse> resultat = new ArrayList<>(participations);
         resultat.sort(Comparator
-                .comparingInt(ParticipationCourse::getToursEffectues)
+                .comparingInt(ParticipationCourse::getToursEffectues).reversed()
                 .thenComparingDouble(ParticipationCourse::getTempsArriveeTheorique)
                 .thenComparing(p -> p.getVoiture().getId()));
-        this.classement = resultat;
-        return Collections.unmodifiableList(this.classement);
+        classement.clear();
+        classement.addAll(resultat);
+        return Collections.unmodifiableList(classement);
     }
 
     public ParticipationCourse getGagnant() {
