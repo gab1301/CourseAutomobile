@@ -86,7 +86,10 @@ public class Course {
     }
 
     public boolean estValidePourDemarrage() {
-        return etat == EtatCourse.EN_PREPARATION && participations.size() >= 2;
+        return etat == EtatCourse.EN_PREPARATION
+                && this.distanceTotale > 0
+                && participations.size() >= 2
+                && participations.stream().allMatch(p -> p.getVoiture().getVitesse() > 0);
     }
 
     public void enregistrerArrivee(ParticipationCourse participation, int tourArrivee, double distanceTotale) {
